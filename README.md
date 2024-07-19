@@ -1,5 +1,5 @@
 A library to track changes in a HashMap over several iterations.
-
+```rust
      //Example usage
      
      use std::collections::HashMap;
@@ -35,4 +35,4 @@ A library to track changes in a HashMap over several iterations.
       );
 
 
-
+```
