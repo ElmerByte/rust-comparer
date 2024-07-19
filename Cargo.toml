@@ -2,6 +2,6 @@
 name = "comparer"
 version = "0.1.0"
 edition = "2021"
-description = "Library for comparing"
+description = "A library to track changes in a HashMap over several iterations"
 license = "MIT"
 [dependencies]
