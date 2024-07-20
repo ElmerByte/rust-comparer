@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::sync::PoisonError;
 
 impl<K: Clone + Eq + Hash, V: Clone + PartialEq> HashMapComparer<K, V> {
     pub fn new() -> Self {
@@ -27,6 +26,7 @@ impl<K: Clone + Eq + Hash, V: Clone + PartialEq> HashMapComparer<K, V> {
     }
 
     /// Checks if last hashmap is the same as new one and updates it to be that new value
+    /// You can access last hashmap using `clone_last()` or by locking last_map yourself
     /// # Examples
     /// ```
     ///   use std::collections::HashMap;
@@ -39,6 +39,10 @@ impl<K: Clone + Eq + Hash, V: Clone + PartialEq> HashMapComparer<K, V> {
     ///   assert_eq!(false, comparer.is_same_update(&my_hashmap));
     ///   // Hashmap has not recived new values
     ///   assert_eq!(true, comparer.is_same_update(&my_hashmap));
+    ///   my_hashmap.insert(2, "bar");
+    ///   // HashMap has new values
+    ///   assert_eq!(false, comparer.is_same_update(&my_hashmap));
+
     ///```
     ///
     pub fn is_same_update(&self, new_map: &HashMap<K, V>) -> bool {
@@ -47,8 +51,8 @@ impl<K: Clone + Eq + Hash, V: Clone + PartialEq> HashMapComparer<K, V> {
         is_same
     }
     /// Updates last hashmap, compares new one to the last one and returns changed values.
-    /// If you want to compare hashmap without updating last hashmap use``` compare()```.
-    /// If you want to update hashmap without comparing it use ```update()``` and if you want to return bool instead of changed values use ```is_same()``` or ```is_same_update()```.
+    /// If you want to compare hashmap without updating last hashmap use` compare()`.
+    /// If you want to update hashmap without comparing it use `update()` and if you want to return bool instead of changed values use `is_same()` or `is_same_update()`.
     ///
     /// # Examples
     /// ```
@@ -70,7 +74,7 @@ impl<K: Clone + Eq + Hash, V: Clone + PartialEq> HashMapComparer<K, V> {
 
     ///   assert_eq!(
     ///       vec![
-    ///           // In a first comparison comparer always returns whole hashmap because all values in it is new
+    ///           // In the first comparison comparer always returns whole hashmap because all values in it is new
     ///           HashMap::<u8, &str>::from_iter(vec![(0, "foo"), (4, "foo"), (2, "bar"), (1, "foo")]),
     ///           // Returns empty hashmap because value 1: "foo" didn't change
     ///           HashMap::<u8, &str>::new(),
@@ -78,7 +82,7 @@ impl<K: Clone + Eq + Hash, V: Clone + PartialEq> HashMapComparer<K, V> {
     ///           HashMap::<u8, &str>::from_iter(vec![(2, "foo")]),
     ///           // Returns hashmap with 3: "foo" because it's a new value
     ///           HashMap::<u8, &str>::from_iter(vec![(3, "foo")]),
-    ///            //Returns empty hashmap because value 4: "foo" didn't change
+    ///           //Returns empty hashmap because value 4: "foo" didn't change
     ///           HashMap::<u8, &str>::new(),
     ///       ],
     ///       results
@@ -88,16 +92,12 @@ impl<K: Clone + Eq + Hash, V: Clone + PartialEq> HashMapComparer<K, V> {
     pub fn update_and_compare(
         &self,
         new_map: &HashMap<K, V>,
-    ) -> Result<HashMap<K, V>, PoisonError<K>> {
+    ) -> Result<HashMap<K, V>, Box<dyn std::error::Error>> {
         let mut last_map = self.last_map.lock().unwrap();
         let mut changed_values: HashMap<K, V> = HashMap::new();
         if !last_map.is_empty() {
-            for (key, value) in new_map.iter() {
-                if last_map.contains_key(key) {
-                    if value != last_map.get(key).unwrap() {
-                        changed_values.insert(key.clone(), value.clone());
-                    }
-                } else {
+            for (key, value) in new_map {
+                if !last_map.contains_key(key) || value != last_map.get(key).expect("None Value") {
                     changed_values.insert(key.clone(), value.clone());
                 }
             }
@@ -108,17 +108,34 @@ impl<K: Clone + Eq + Hash, V: Clone + PartialEq> HashMapComparer<K, V> {
         Ok(new_map.clone())
     }
     /// Compares new hashmap to the last one and returns changed values
+    /// # Examples
+    /// ```
+    ///   use std::collections::HashMap;
+    ///   use comparer::HashMapComparer;
+    ///
+    ///   let comparer = HashMapComparer::<u8, &str>::new();
+    ///   let mut my_hashmap = HashMap::<u8, &str>::new();
 
-    pub fn compare(&self, new_map: &HashMap<K, V>) -> Result<HashMap<K, V>, PoisonError<K>> {
+    ///   my_hashmap.insert(1, "foo");
+    ///   assert_eq!(my_hashmap, comparer.compare(&my_hashmap).unwrap());
+    ///
+    ///   comparer.update(&my_hashmap);
+    ///
+    ///   my_hashmap.insert(2, "bar");
+    ///   assert_eq!(HashMap::<u8, &str>::from_iter(vec![(2, "bar")]), comparer.compare(&my_hashmap).unwrap());
+    ///
+
+    /// ```
+
+    pub fn compare(
+        &self,
+        new_map: &HashMap<K, V>,
+    ) -> Result<HashMap<K, V>, Box<dyn std::error::Error>> {
         let last_map = self.last_map.lock().unwrap();
         let mut changed_values: HashMap<K, V> = HashMap::new();
         if !last_map.is_empty() {
             for (key, value) in new_map.iter() {
-                if last_map.contains_key(key) {
-                    if value != last_map.get(key).unwrap() {
-                        changed_values.insert(key.clone(), value.clone());
-                    }
-                } else {
+                if !last_map.contains_key(key) || value != last_map.get(key).unwrap() {
                     changed_values.insert(key.clone(), value.clone());
                 }
             }
@@ -128,7 +145,8 @@ impl<K: Clone + Eq + Hash, V: Clone + PartialEq> HashMapComparer<K, V> {
     }
 }
 
-/// HashMapC
+/// HashMapComparer
+/// struct that contains `last_map` and impliments several methods for it
 #[derive(Debug, Clone)]
 pub struct HashMapComparer<K: Clone + Eq + Hash, V: Clone + PartialEq> {
     last_map: Arc<Mutex<HashMap<K, V>>>,
