@@ -27,6 +27,20 @@ impl<K: Clone + Eq + Hash, V: Clone + PartialEq> HashMapComparer<K, V> {
     }
 
     /// Checks if last hashmap is the same as new one and updates it to be that new value
+    /// # Examples
+    /// ```
+    ///   use std::collections::HashMap;
+    ///   use comparer::HashMapComparer;
+    ///
+    ///   let mut my_hashmap = HashMap::<u8, &str>::new();
+    ///   let comparer = HashMapComparer::<u8, &str>::new();
+    ///   my_hashmap.insert(1, "foo");
+    ///   // HashMap has new values
+    ///   assert_eq!(false, comparer.is_same_update(&my_hashmap));
+    ///   // Hashmap has not recived new values
+    ///   assert_eq!(true, comparer.is_same_update(&my_hashmap));
+    ///```
+    ///
     pub fn is_same_update(&self, new_map: &HashMap<K, V>) -> bool {
         let is_same = self.is_same(new_map);
         self.update(new_map);
@@ -38,9 +52,9 @@ impl<K: Clone + Eq + Hash, V: Clone + PartialEq> HashMapComparer<K, V> {
     ///
     /// # Examples
     /// ```
-    /// use std::collections::HashMap;
-    /// use comparer::HashMapComparer;
-    /// let comparer = HashMapComparer::<u8, &str>::new();
+    ///   use std::collections::HashMap;
+    ///   use comparer::HashMapComparer;
+    ///   let comparer = HashMapComparer::<u8, &str>::new();
     ///   let mut my_hashmap = HashMap::<u8, &str>::new();
 
     ///   my_hashmap.insert(1, "foo");
