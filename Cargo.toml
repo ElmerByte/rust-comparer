@@ -1,9 +1,14 @@
 [package]
 name = "comparer"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
-description = "A simple library to track changes in a HashMap over several iterations"
+description = "A simple library to track changes in a HashMap/DashMap over several iterations"
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/ElmerByte/rust-comparer"
 [dependencies]
+dashmap = { version = "6.1", optional = true }
+
+[features]
+default = []
+dashmap = ["dep:dashmap"]

@@ -1,7 +1,7 @@
-### A simple library to track changes in a HashMap over several iterations.
+### A simple library to track changes in a HashMap/DashMap over several iterations.
 
-This library is designed to detect if a HashMap has been updated since it was last checked or if it is unchanged.
-You can compare your hashmap with it's previous version to see if anything has been changed or added.
+This library is designed to detect if a HashMap/DashMap has been updated since it was last checked or if it is unchanged.
+You can compare your HashMap/DashMap with it's previous version to see if anything has been changed or added.
 
 ### Use cases
 Simple use case when you need to return bool from a comparison:
@@ -59,4 +59,4 @@ assert_eq!(
  );
 ```
     
-This library does not use any third-party crates, only crates from the standard rust library :)
+This library does not use any third-party crates, only crates from the standard rust library :]
